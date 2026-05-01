@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1e293b;
 }
 
 @theme inline {
@@ -10,17 +10,30 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Brand colors */
+  --color-brand: #1D4ED8;
+  --color-brand-dark: #1e40af;
+  --color-brand-200: #bfdbfe;
+  --color-saffron: #F97316;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* React Flow overrides */
+.react-flow__attribution {
+  font-size: 9px;
+  opacity: 0.5;
+}
+
+/* Prose for markdown chat */
+.prose p { margin: 0.25rem 0; }
+.prose ul { margin: 0.25rem 0; padding-left: 1.25rem; }
+.prose li { margin: 0.1rem 0; }
+.prose strong { font-weight: 600; }
+.prose code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.8em; }
