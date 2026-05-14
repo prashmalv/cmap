@@ -14,7 +14,7 @@ import matrixData from "@/data/career-matrix.json";
 
 export default function MapPage() {
   const router = useRouter();
-  const { profile, selectCareer, language } = useProfileStore();
+  const { profile, selectCareer, clearChat, language } = useProfileStore();
   const tr = useT(language);
   const [matches, setMatches] = useState<CareerMatch[]>([]);
 
@@ -24,7 +24,7 @@ export default function MapPage() {
   }, [profile, router]);
 
   function handleSelectCareer(id: string) { selectCareer(id); router.push(`/career/${id}`); }
-  function handleChatCareer(id: string) { selectCareer(id); router.push("/chat"); }
+  function handleChatCareer(id: string) { clearChat(); selectCareer(id); router.push("/chat"); }
 
   if (!profile) return null;
 

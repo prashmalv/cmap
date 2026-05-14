@@ -15,7 +15,7 @@ import matrixData from "@/data/career-matrix.json";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile, selectCareer, language } = useProfileStore();
+  const { profile, selectCareer, clearChat, language } = useProfileStore();
   const tr = useT(language);
   const [matches, setMatches] = useState<CareerMatch[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -51,6 +51,7 @@ export default function DashboardPage() {
   }
 
   function handleChatCareer(id: string) {
+    clearChat();
     selectCareer(id);
     router.push("/chat");
   }
