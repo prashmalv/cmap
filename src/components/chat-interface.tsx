@@ -159,90 +159,231 @@ export function ChatInterface() {
       const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
       const margin = 18;
       const contentW = pageW - margin * 2;
       let y = 20;
 
-      const addText = (text: string, size = 11, style: "normal" | "bold" = "normal", color = "#1e293b") => {
+      function checkPage(needed = 12) {
+        if (y + needed > pageH - 15) { doc.addPage(); y = 22; }
+      }
+
+      function setStyle(size: number, style: "normal" | "bold" | "italic" = "normal", hex = "#334155") {
         doc.setFontSize(size);
         doc.setFont("helvetica", style);
-        doc.setTextColor(color);
-        const lines = doc.splitTextToSize(text, contentW);
-        lines.forEach((line: string) => {
-          if (y > 270) { doc.addPage(); y = 20; }
-          doc.text(line, margin, y);
-          y += size * 0.45;
-        });
-        y += 2;
-      };
-
-      const addSection = (title: string) => {
-        y += 4;
-        if (y > 265) { doc.addPage(); y = 20; }
-        doc.setFillColor(239, 246, 255);
-        doc.roundedRect(margin - 2, y - 5, contentW + 4, 10, 2, 2, "F");
-        addText(title, 12, "bold", "#1d4ed8");
-        y += 1;
-      };
-
-      // Header
-      doc.setFillColor(29, 78, 216);
-      doc.rect(0, 0, pageW, 28, "F");
-      doc.setFontSize(18); doc.setFont("helvetica", "bold"); doc.setTextColor("#ffffff");
-      doc.text("CareerMap AI", margin, 13);
-      doc.setFontSize(10); doc.setFont("helvetica", "normal");
-      doc.text("Career Counseling Report", margin, 21);
-      doc.setFontSize(9); doc.setTextColor("#bfdbfe");
-      doc.text(new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }), pageW - margin - 30, 21);
-      y = 38;
-
-      // Profile
-      addSection("👤 User Profile");
-      addText(`Name: ${profile.name}    Age: ${profile.age} yrs    Category: ${(profile.caste_category ?? "general").toUpperCase()}`);
-      addText(`Education: ${profile.education}    Experience: ${profile.experience_years} years${profile.experience_domain ? ` — ${profile.experience_domain}` : ""}`);
-      addText(`Interests: ${profile.interests?.join(", ") || "Not specified"}    Location: ${profile.location}`);
-
-      // Career
-      if (selectedCareer) {
-        addSection(`🎯 Career Explored: ${selectedCareer.title}`);
-        if (selectedCareer.title_hi) addText(`(${selectedCareer.title_hi})`);
-        addText(selectedCareer.description || "");
-        addText(`Salary Range: ${selectedCareer.salary_range?.entry || "—"} (Entry)  →  ${selectedCareer.salary_range?.senior || "—"} (Senior)`, 10);
-        addText(`Timeline to Enter: ${selectedCareer.timeline_to_enter || "—"}`, 10);
+        doc.setTextColor(hex);
       }
 
-      // Conversation
-      addSection("💬 AI Counseling Highlights");
-      const aiMessages = chatHistory.filter((m) => m.role === "assistant");
-      aiMessages.forEach((msg, idx) => {
-        const clean = msg.content
+      function writeLine(text: string, size: number, style: "normal" | "bold" | "italic", hex: string, indent = 0) {
+        setStyle(size, style, hex);
+        const wrapped = doc.splitTextToSize(text, contentW - indent);
+        wrapped.forEach((l: string) => { checkPage(size * 0.5); doc.text(l, margin + indent, y); y += size * 0.46; });
+      }
+
+      function addSection(title: string) {
+        y += 5; checkPage(14);
+        doc.setFillColor(239, 246, 255);
+        doc.setDrawColor(191, 219, 254);
+        doc.roundedRect(margin - 3, y - 6, contentW + 6, 11, 2, 2, "FD");
+        writeLine(title, 11, "bold", "#1d4ed8");
+        y += 3;
+      }
+
+      // Strip inline markdown symbols, keep text
+      function cleanInline(text: string): string {
+        return text
           .replace(/\*\*(.*?)\*\*/g, "$1")
           .replace(/\*(.*?)\*/g, "$1")
-          .replace(/#{1,3}\s/g, "")
-          .replace(/\n{3,}/g, "\n\n")
+          .replace(/`([^`]+)`/g, "$1")
+          .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+          .replace(/_{1,2}(.*?)_{1,2}/g, "$1")
           .trim();
-        if (idx > 0) y += 3;
-        addText(`AI Response ${idx + 1}:`, 10, "bold", "#374151");
-        addText(clean.slice(0, 800) + (clean.length > 800 ? "..." : ""), 9, "normal", "#374151");
-        y += 2;
-      });
-
-      // Mentor
-      if (mentors.length > 0) {
-        addSection("🤝 Suggested Mentor / Expert");
-        const m = mentors[0];
-        addText(`${m.avatar} ${m.name}`, 11, "bold");
-        addText(`Role: ${m.role}`);
-        addText(`Organisation: ${m.org}`);
-        addText(`Expertise: ${m.expertise}`);
-        addText(`Contact/Portal: ${m.contact}`);
       }
 
-      // Footer
-      doc.setFontSize(8); doc.setTextColor("#94a3b8");
-      doc.text("Generated by CareerMap AI — careermap-ai.azurewebsites.net  |  For guidance only. Verify from official sources.", margin, 287);
+      // Render a parsed markdown table as a proper grid
+      function renderTable(rows: string[][]) {
+        if (rows.length === 0) return;
+        const cols = Math.max(...rows.map((r) => r.length));
+        const colW = contentW / cols;
+        const rowH = 8;
+        rows.forEach((row, ri) => {
+          checkPage(rowH + 2);
+          if (ri === 0) doc.setFillColor(219, 234, 254);
+          else doc.setFillColor(ri % 2 === 0 ? 241 : 255, ri % 2 === 0 ? 245 : 255, ri % 2 === 0 ? 255 : 255);
+          doc.setDrawColor(203, 213, 225);
+          doc.rect(margin, y - 5.5, contentW, rowH, "FD");
+          row.forEach((cell, ci) => {
+            setStyle(8, ri === 0 ? "bold" : "normal", ri === 0 ? "#1d4ed8" : "#374151");
+            const cellText = doc.splitTextToSize(cleanInline(cell), colW - 3);
+            doc.text(cellText[0] ?? "", margin + ci * colW + 2, y);
+          });
+          y += rowH;
+        });
+        y += 3;
+      }
 
-      doc.save(`CareerMap_Report_${profile.name.replace(/\s+/g, "_")}_${selectedCareer?.title?.replace(/\s+/g, "_") || "Career"}.pdf`);
+      // Full markdown renderer: handles headings, bullets, numbered lists, tables
+      function renderMarkdown(content: string) {
+        const lines = content.split("\n");
+        let i = 0;
+        while (i < lines.length) {
+          const raw = lines[i];
+          const t = raw.trim();
+
+          if (!t) { y += 2; i++; continue; }
+
+          // Table block
+          if (t.startsWith("|")) {
+            const tableRows: string[][] = [];
+            while (i < lines.length && lines[i].trim().startsWith("|")) {
+              const row = lines[i].trim();
+              // skip separator rows like |---|---|
+              if (!/^[\|\s\-:]+$/.test(row)) {
+                const cells = row.split("|").slice(1, -1).map((c) => c.trim());
+                if (cells.length) tableRows.push(cells);
+              }
+              i++;
+            }
+            if (tableRows.length) renderTable(tableRows);
+            continue;
+          }
+
+          // H1
+          if (t.startsWith("# ")) {
+            y += 2; checkPage(10);
+            writeLine(cleanInline(t.slice(2)), 13, "bold", "#1e293b");
+            y += 2; i++; continue;
+          }
+          // H2
+          if (t.startsWith("## ")) {
+            y += 2; checkPage(8);
+            writeLine(cleanInline(t.slice(3)), 11, "bold", "#1d4ed8");
+            y += 1; i++; continue;
+          }
+          // H3
+          if (t.startsWith("### ")) {
+            checkPage(7);
+            writeLine(cleanInline(t.slice(4)), 10, "bold", "#374151");
+            y += 1; i++; continue;
+          }
+
+          // Bullet
+          const bullet = t.match(/^[-*•]\s+(.+)/);
+          if (bullet) {
+            checkPage(6);
+            setStyle(9, "normal", "#374151");
+            const wrapped = doc.splitTextToSize("• " + cleanInline(bullet[1]), contentW - 6);
+            wrapped.forEach((l: string, li: number) => {
+              checkPage(5); doc.text(li === 0 ? l : "  " + l, margin + 4, y); y += 4.5;
+            });
+            i++; continue;
+          }
+
+          // Numbered list
+          const numbered = t.match(/^(\d+)[.)]\s+(.+)/);
+          if (numbered) {
+            checkPage(6);
+            setStyle(9, "normal", "#374151");
+            const wrapped = doc.splitTextToSize(`${numbered[1]}. ${cleanInline(numbered[2])}`, contentW - 6);
+            wrapped.forEach((l: string, li: number) => {
+              checkPage(5); doc.text(li === 0 ? l : "   " + l, margin + 4, y); y += 4.5;
+            });
+            i++; continue;
+          }
+
+          // Horizontal rule
+          if (/^[-_*]{3,}$/.test(t)) {
+            checkPage(5);
+            doc.setDrawColor(226, 232, 240);
+            doc.line(margin, y, margin + contentW, y);
+            y += 4; i++; continue;
+          }
+
+          // Plain text
+          const cleaned = cleanInline(t);
+          if (cleaned) writeLine(cleaned, 9, "normal", "#374151");
+          i++;
+        }
+      }
+
+      // ─── HEADER ─────────────────────────────────────────
+      doc.setFillColor(29, 78, 216);
+      doc.rect(0, 0, pageW, 28, "F");
+      doc.setFillColor(251, 146, 60);
+      doc.rect(0, 25, pageW, 3, "F");
+      setStyle(19, "bold", "#ffffff");
+      doc.text("CareerMap AI", margin, 14);
+      setStyle(10, "normal", "#bfdbfe");
+      doc.text("Personalized Career Counseling Report", margin, 22);
+      setStyle(9, "normal", "#bfdbfe");
+      const dateStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+      doc.text(dateStr, pageW - margin - doc.getTextWidth(dateStr) - 1, 22);
+      y = 40;
+
+      // ─── PROFILE ────────────────────────────────────────
+      addSection("👤 Candidate Profile");
+      writeLine(`${profile.name}   ·   Age: ${profile.age} yrs   ·   Category: ${(profile.caste_category ?? "general").toUpperCase()}`, 10, "bold", "#1e293b");
+      writeLine(`Education: ${profile.education}`, 9, "normal", "#475569");
+      if (profile.experience_years > 0)
+        writeLine(`Experience: ${profile.experience_years} yrs${profile.experience_domain ? ` — ${profile.experience_domain}` : ""}`, 9, "normal", "#475569");
+      writeLine(`Interests: ${profile.interests?.join(", ") || "Not specified"}   ·   Location: ${profile.location}`, 9, "normal", "#475569");
+
+      // ─── CAREER ─────────────────────────────────────────
+      if (selectedCareer) {
+        addSection(`🎯 Career: ${selectedCareer.title}${selectedCareer.title_hi ? ` (${selectedCareer.title_hi})` : ""}`);
+        if (selectedCareer.description) writeLine(selectedCareer.description, 9, "normal", "#475569");
+        y += 1;
+        writeLine(
+          `Entry Salary: ${selectedCareer.salary_range?.entry || "—"}   ·   Senior: ${selectedCareer.salary_range?.senior || "—"}   ·   Timeline: ${selectedCareer.timeline_to_enter || "—"}`,
+          9, "normal", "#374151"
+        );
+      }
+
+      // ─── AI CONVERSATION ────────────────────────────────
+      const aiMessages = chatHistory.filter((m) => m.role === "assistant");
+      if (aiMessages.length > 0) {
+        addSection("💬 AI Counseling Session");
+        aiMessages.forEach((msg, idx) => {
+          if (idx > 0) {
+            y += 4; checkPage(8);
+            doc.setDrawColor(226, 232, 240);
+            doc.line(margin, y - 2, margin + contentW, y - 2);
+            y += 3;
+          }
+          if (aiMessages.length > 1) { writeLine(`Response ${idx + 1}`, 9, "bold", "#6b7280"); y += 1; }
+          renderMarkdown(msg.content);
+          y += 2;
+        });
+      }
+
+      // ─── MENTOR ─────────────────────────────────────────
+      if (mentors.length > 0) {
+        addSection("🤝 Suggested Mentor / Expert");
+        mentors.slice(0, 2).forEach((m) => {
+          checkPage(30);
+          doc.setFillColor(240, 253, 244);
+          doc.setDrawColor(167, 243, 208);
+          doc.roundedRect(margin, y - 4, contentW, 26, 2, 2, "FD");
+          writeLine(`${m.avatar}  ${m.name}`, 10, "bold", "#065f46");
+          writeLine(`${m.role}  ·  ${m.org}`, 9, "normal", "#374151");
+          writeLine(`Expertise: ${m.expertise}`, 9, "normal", "#374151");
+          writeLine(`Portal: ${m.contact}`, 9, "normal", "#0369a1");
+          y += 8;
+        });
+      }
+
+      // ─── PAGE FOOTERS ────────────────────────────────────
+      const totalPages = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        setStyle(7.5, "normal", "#94a3b8");
+        doc.text(
+          `CareerMap AI  |  careermap-ai.azurewebsites.net  |  For guidance only — verify from official sources  |  Page ${p} / ${totalPages}`,
+          margin, pageH - 7
+        );
+      }
+
+      doc.save(`CareerMap_Report_${profile.name.replace(/\s+/g, "_")}.pdf`);
     } catch (e) {
       console.error("PDF error", e);
     } finally {
