@@ -4,9 +4,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ChevronLeft, MapPin, Clock, TrendingUp, Target, BookOpen,
+  ChevronLeft, MapPin, TrendingUp, Target, BookOpen,
   ExternalLink, Bot, Search, Loader2, CheckCircle, AlertCircle
 } from "lucide-react";
+import { GapAnalysisPanel } from "@/components/gap-analysis";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -137,20 +138,10 @@ export default function CareerDetailPage() {
           </div>
         </motion.div>
 
-        {/* Eligibility gap alert */}
-        {match && match.missing_requirements.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-            className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <h3 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> Gap Analysis
-            </h3>
-            <ul className="space-y-1">
-              {match.missing_requirements.map((req, i) => (
-                <li key={i} className="text-sm text-amber-700 flex items-start gap-2">
-                  <span className="mt-0.5">•</span> {req}
-                </li>
-              ))}
-            </ul>
+        {/* Gap Analysis */}
+        {match?.gap_analysis && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+            <GapAnalysisPanel gap={match.gap_analysis} />
           </motion.div>
         )}
 

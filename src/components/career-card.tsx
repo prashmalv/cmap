@@ -8,6 +8,7 @@ import type { CareerMatch } from "@/lib/career-engine";
 import { useProfileStore } from "@/store/profile";
 import { useT } from "@/lib/i18n";
 import matrixData from "@/data/career-matrix.json";
+import { GapAnalysisPanel } from "./gap-analysis";
 
 interface CareerCardProps {
   match: CareerMatch;
@@ -78,10 +79,8 @@ export function CareerCard({ match, onSelect, onChat, index }: CareerCardProps) 
             </div>
           </div>
 
-          {match.missing_requirements.length > 0 && (
-            <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-100">
-              <p className="text-xs text-amber-700 font-medium">{tr("card_gap")} {match.missing_requirements[0]}</p>
-            </div>
+          {match.gap_analysis && (
+            <GapAnalysisPanel gap={match.gap_analysis} compact />
           )}
 
           <div className="flex gap-2 mt-3">
