@@ -18,7 +18,7 @@ export class AzureOpenAIProvider implements LLMProvider {
   async chat(messages: Message[], systemPrompt: string): Promise<string> {
     const response = await this.client.chat.completions.create({
       model: this.deployment,
-      max_tokens: 2048,
+      max_completion_tokens: 2048,
       messages: [
         { role: "system", content: systemPrompt },
         ...messages
@@ -36,7 +36,7 @@ export class AzureOpenAIProvider implements LLMProvider {
   ): Promise<void> {
     const stream = await this.client.chat.completions.create({
       model: this.deployment,
-      max_tokens: 2048,
+      max_completion_tokens: 2048,
       stream: true,
       messages: [
         { role: "system", content: systemPrompt },
