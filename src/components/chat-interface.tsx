@@ -15,22 +15,16 @@ function buildAutoPrompt(profile: UserProfile, careerTitle: string, lang: string
   const langNote = lang === "hi" ? "हिंदी में उत्तर दें।" : lang === "hinglish" ? "Hinglish mein jawab do." : "Reply in English.";
   return `${langNote}
 
-User Profile:
-- Name: ${profile.name}, Age: ${profile.age}
-- Education: ${profile.education}
-- Experience: ${profile.experience_years} years${profile.experience_domain ? ` in ${profile.experience_domain}` : ""}
-- Interests: ${profile.interests?.join(", ") || "Not specified"}
-- Category: ${profile.caste_category}, Location: ${profile.location}
+Candidate: ${profile.name}, Age ${profile.age}, Education: ${profile.education}, Experience: ${profile.experience_years}yr${profile.experience_domain ? ` (${profile.experience_domain})` : ""}, Category: ${profile.caste_category ?? "general"}.
 
-The user wants to explore the career: **${careerTitle}**
+Career of interest: **${careerTitle}**
 
-Please provide a structured career counseling overview covering:
-1. **Eligibility Assessment** — Is this user currently eligible or partially eligible? What's the gap?
-2. **Step-by-Step Roadmap** — Clear 3-phase plan: What to do now → in 6 months → in 1 year
-3. **Key Preparation Tips** — Exams, skills, certifications needed
-4. **Honest Reality Check** — Competition level, salary expectation, time commitment
+Give a concise career counseling response covering:
+1. **Eligibility** — eligible or what's the gap?
+2. **Roadmap** — 3 clear steps to get started
+3. **Reality Check** — competition level & salary
 
-End with 2 follow-up questions asking what specific aspect they want to explore deeper (like "salary details", "exam syllabus", "coaching institutes", etc).`;
+Keep it brief and practical. End with 2 specific follow-up questions.`;
 }
 
 export function ChatInterface() {
