@@ -3,6 +3,16 @@ import type { LLMProvider } from "./types";
 export function createLLMProvider(): LLMProvider {
   const provider = process.env.LLM_PROVIDER ?? "claude";
 
+  if (provider === "azure_openai") {
+    const { AzureOpenAIProvider } = require("./providers/azure-openai");
+    return new AzureOpenAIProvider(
+      process.env.AZURE_OPENAI_ENDPOINT!,
+      process.env.AZURE_OPENAI_KEY!,
+      process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-5",
+      process.env.AZURE_OPENAI_API_VERSION ?? "2025-04-01-preview"
+    );
+  }
+
   if (provider === "openai") {
     const { OpenAIProvider } = require("./providers/openai");
     return new OpenAIProvider(
