@@ -94,10 +94,15 @@ export function ChatInterface() {
           try { const { text } = JSON.parse(line.slice(6)); fullText += text; setStreamingText(fullText); } catch {}
         }
       }
-      addChatMessage({ role: "assistant", content: fullText });
+      if (fullText.trim()) {
+        addChatMessage({ role: "assistant", content: fullText });
+        setShowMentors(true);
+      } else {
+        addChatMessage({ role: "assistant", content: "⚠️ Could not get a response. Please type your question below or try again." });
+      }
       setStreamingText("");
-      setShowMentors(true);
-    } catch {
+    } catch (err) {
+      console.error("Chat error:", err);
       addChatMessage({ role: "assistant", content: tr("chat_error") });
     } finally {
       setIsLoading(false);

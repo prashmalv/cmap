@@ -3,6 +3,14 @@ import type { LLMProvider } from "./types";
 export function createLLMProvider(): LLMProvider {
   const provider = process.env.LLM_PROVIDER ?? "claude";
 
+  if (provider === "mistral") {
+    const { MistralProvider } = require("./providers/mistral");
+    return new MistralProvider(
+      process.env.MISTRAL_API_KEY!,
+      process.env.MISTRAL_MODEL ?? "mistral-large-latest"
+    );
+  }
+
   if (provider === "azure_openai") {
     const { AzureOpenAIProvider } = require("./providers/azure-openai");
     return new AzureOpenAIProvider(

@@ -25,8 +25,10 @@ export async function POST(req: NextRequest) {
     return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",      // prevent nginx/ARR proxy buffering
+        "Transfer-Encoding": "chunked",
       },
     });
   } catch (error) {
