@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 const LANG_INSTRUCTIONS: Record<string, string> = {
-  hi: `भाषा नियम: केवल शुद्ध हिंदी में उत्तर दें। तकनीकी शब्दों (जैसे UPSC, SSC, IAS, B.Tech) को अंग्रेज़ी में रखें, बाकी सब हिंदी में। देवनागरी लिपि का प्रयोग करें।`,
-  hinglish: `Language Rule: Respond in Hinglish — a natural mix of Hindi and English. Use Roman script. Example: "Aapko UPSC ki tayyari karni chahiye, jo ki bahut competitive hai."`,
-  en: `Language Rule: Respond ONLY in clear, simple English. Avoid Hindi/Hinglish. Use plain language suitable for all education levels.`,
+  hi: `MANDATORY LANGUAGE RULE: You MUST respond in Hindi (Devanagari script) throughout. Do NOT write English sentences. Keep only technical terms like UPSC, IAS, SSC, B.Tech, MBA, NDA in English — everything else in Hindi. If the user writes in English, still respond in Hindi. Example: "आपकी उम्र 24 वर्ष है और graduation पूरी है, इसलिए आप IAS के लिए eligible हैं। अभी से UPSC की तैयारी शुरू करें।"`,
+  hinglish: `MANDATORY LANGUAGE RULE: You MUST respond in Hinglish only — Roman script Hindi mixed with English words naturally. Do NOT write full paragraphs in pure English or pure Hindi. Example: "Aapko UPSC ki tayyari abhi se shuru karni chahiye. Pehle Prelims clear karo, uske baad Mains ki preparation hogi."`,
+  en: `MANDATORY LANGUAGE RULE: Respond in simple English only. Do not use Hindi or Hinglish.`,
 };
 
 export function buildCareerSystemPrompt(
@@ -51,7 +51,7 @@ ${profileSection}
 ${careerSection}
 
 IMPORTANT RULES:
-1. ${langInstruction}
+1. ALWAYS follow the language rule above — never switch language mid-response
 2. Be warm, encouraging, and practical
 3. Always give specific Indian context — exams, colleges, salary in INR, Rajasthan-specific info when relevant
 4. For government jobs: mention exact exam names, bodies, eligibility

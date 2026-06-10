@@ -8,8 +8,8 @@ import { getCareerById } from "@/lib/career-engine";
 import { getMentorsForCareer } from "@/lib/mentors";
 import { useT } from "@/lib/i18n";
 import type { UserProfile } from "@/lib/career-engine";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const ReactMarkdown = require("react-markdown").default;
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 function buildAutoPrompt(profile: UserProfile, careerTitle: string, lang: string): string {
   const langNote = lang === "hi" ? "हिंदी में उत्तर दें।" : lang === "hinglish" ? "Hinglish mein jawab do." : "Reply in English.";
@@ -476,7 +476,7 @@ export function ChatInterface() {
                 ? "bg-orange-500 text-white rounded-tr-none"
                 : "bg-white border border-slate-200 text-slate-800 rounded-tl-none"}`}>
               {msg.role === "assistant"
-                ? <div className="prose prose-sm max-w-none"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                ? <div className="chat-md"><ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown></div>
                 : msg.content}
             </div>
           </motion.div>
@@ -489,7 +489,7 @@ export function ChatInterface() {
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div className="max-w-[80%] bg-white border border-slate-200 rounded-xl rounded-tl-none px-3 py-2 text-sm text-slate-800">
-              <div className="prose prose-sm max-w-none"><ReactMarkdown>{streamingText}</ReactMarkdown></div>
+              <div className="chat-md"><ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingText}</ReactMarkdown></div>
               <span className="inline-block w-1.5 h-4 bg-blue-700 animate-pulse ml-0.5" />
             </div>
           </motion.div>

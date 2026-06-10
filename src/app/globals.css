@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
@@ -31,9 +32,26 @@ body {
   opacity: 0.5;
 }
 
-/* Prose for markdown chat */
-.prose p { margin: 0.25rem 0; }
-.prose ul { margin: 0.25rem 0; padding-left: 1.25rem; }
-.prose li { margin: 0.1rem 0; }
-.prose strong { font-weight: 600; }
-.prose code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.8em; }
+/* ── Chat markdown styles ─────────────────────────────────── */
+.chat-md { font-size: 0.875rem; line-height: 1.6; color: #1e293b; }
+.chat-md p  { margin: 0.3rem 0; }
+.chat-md h1 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0.75rem 0 0.3rem; }
+.chat-md h2 { font-size: 1rem;   font-weight: 700; color: #1d4ed8; margin: 0.6rem 0 0.25rem; }
+.chat-md h3 { font-size: 0.9rem; font-weight: 600; color: #374151; margin: 0.5rem 0 0.2rem; }
+.chat-md ul { margin: 0.3rem 0; padding-left: 1.2rem; list-style: disc; }
+.chat-md ol { margin: 0.3rem 0; padding-left: 1.4rem; list-style: decimal; }
+.chat-md li { margin: 0.2rem 0; }
+.chat-md strong { font-weight: 700; color: #0f172a; }
+.chat-md em     { font-style: italic; color: #475569; }
+.chat-md code   { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.8em; font-family: monospace; }
+.chat-md blockquote { border-left: 3px solid #1d4ed8; padding-left: 0.75rem; color: #475569; margin: 0.4rem 0; }
+.chat-md hr { border: none; border-top: 1px solid #e2e8f0; margin: 0.6rem 0; }
+
+/* Tables */
+.chat-md table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.82rem; border-radius: 8px; overflow: hidden; }
+.chat-md thead tr { background: #1d4ed8; color: #fff; }
+.chat-md thead th { padding: 7px 10px; text-align: left; font-weight: 600; border: none; }
+.chat-md tbody tr:nth-child(even) { background: #f8fafc; }
+.chat-md tbody tr:nth-child(odd)  { background: #ffffff; }
+.chat-md tbody tr:hover { background: #eff6ff; }
+.chat-md tbody td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #374151; }
