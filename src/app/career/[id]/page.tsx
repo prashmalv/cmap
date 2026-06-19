@@ -12,15 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useProfileStore } from "@/store/profile";
-import { getCareerById, matchCareers, type CareerMatch } from "@/lib/career-engine";
+import { getCareerById, matchCareers, getAlternativeCareers, type CareerMatch } from "@/lib/career-engine";
 import type { UserProfile } from "@/lib/career-engine";
 import matrixData from "@/data/career-matrix.json";
 
 export default function CareerDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { profile, selectCareer } = useProfileStore();
+  const { profile, selectCareer, setGapChatTrigger } = useProfileStore();
   const [match, setMatch] = useState<CareerMatch | null>(null);
+  const [alternatives, setAlternatives] = useState<import("@/components/gap-analysis").AlternativeCareerItem[]>([]);
   const [newsResult, setNewsResult] = useState<string | null>(null);
   const [newsLoading, setNewsLoading] = useState(false);
 
@@ -34,6 +35,15 @@ export default function CareerDetailPage() {
       const matches = matchCareers(profile as UserProfile);
       const found = matches.find((m) => m.career.id === id);
       setMatch(found ?? null);
+      const alts = getAlternativeCareers(profile as UserProfile, id);
+      setAlternatives(alts.map((a) => ({
+        id: a.career.id,
+        title: a.career.title,
+        title_hi: (a.career as { title_hi?: string }).title_hi,
+        feasibility_label: a.gap_analysis.feasibility_label,
+        feasibility_color: a.gap_analysis.feasibility_color,
+        match_score: a.match_score,
+      })));
     }
   }, [id, career, profile, selectCareer, router]);
 
@@ -141,7 +151,16 @@ export default function CareerDetailPage() {
         {/* Gap Analysis */}
         {match?.gap_analysis && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-            <GapAnalysisPanel gap={match.gap_analysis} />
+            <GapAnalysisPanel
+              gap={match.gap_analysis}
+              alternatives={alternatives}
+              onChatAboutGap={() => {
+                const gapSummary = `I want to bridge the gap for "${career.title}". My education is ${profile?.education}, age ${profile?.age}. Current status: ${match.gap_analysis.feasibility_label}. ${match.gap_analysis.recommendation}`;
+                setGapChatTrigger({ careerId: id, gapSummary });
+                selectCareer(id);
+                router.push("/chat");
+              }}
+            />
           </motion.div>
         )}
 

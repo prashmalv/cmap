@@ -1,10 +1,10 @@
 "use client";
-import { CheckCircle, AlertCircle, XCircle, Clock, GraduationCap, User, Lightbulb } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle, AlertCircle, XCircle, Clock, GraduationCap, User, Lightbulb, MessageCircle, ArrowRight } from "lucide-react";
+import { Button } from "./ui/button";
 import type { GapAnalysis } from "@/lib/career-engine";
 
-interface GapBadgeProps {
-  gap: GapAnalysis;
-}
+interface GapBadgeProps { gap: GapAnalysis; }
 
 export function GapFeasibilityBadge({ gap }: GapBadgeProps) {
   const icons = {
@@ -24,25 +24,32 @@ export function GapFeasibilityBadge({ gap }: GapBadgeProps) {
   );
 }
 
+export interface AlternativeCareerItem {
+  id: string;
+  title: string;
+  title_hi?: string;
+  feasibility_label: string;
+  feasibility_color: string;
+  match_score: number;
+}
+
 interface GapCardProps {
   gap: GapAnalysis;
   compact?: boolean;
+  onChatAboutGap?: () => void;
+  alternatives?: AlternativeCareerItem[];
 }
 
-export function GapAnalysisPanel({ gap, compact = false }: GapCardProps) {
+export function GapAnalysisPanel({ gap, compact = false, onChatAboutGap, alternatives }: GapCardProps) {
   if (compact) {
     return (
       <div className="mt-3 rounded-xl border overflow-hidden" style={{ borderColor: gap.feasibility_color + "40" }}>
-        <div
-          className="px-3 py-2 flex items-center justify-between"
-          style={{ background: gap.feasibility_color + "12" }}
-        >
+        <div className="px-3 py-2 flex items-center justify-between" style={{ background: gap.feasibility_color + "12" }}>
           <GapFeasibilityBadge gap={gap} />
           {gap.gap_years > 0 && (
             <span className="text-[10px] text-slate-400">{gap.gap_years.toFixed(1)} yr gap</span>
           )}
         </div>
-
         {(gap.education_gap.has_gap || !gap.age_status.ok) && (
           <div className="px-3 py-2 space-y-1.5 bg-white">
             {gap.education_gap.has_gap && (
@@ -64,7 +71,6 @@ export function GapAnalysisPanel({ gap, compact = false }: GapCardProps) {
             )}
           </div>
         )}
-
         {gap.feasibility === "ready" && (
           <div className="px-3 py-2 bg-white">
             <div className="flex flex-wrap gap-1">
@@ -78,7 +84,9 @@ export function GapAnalysisPanel({ gap, compact = false }: GapCardProps) {
     );
   }
 
-  // Full panel for detail page
+  const showAlternatives = alternatives && alternatives.length > 0 &&
+    (gap.feasibility === "not_feasible" || gap.feasibility === "long_journey");
+
   return (
     <div className="rounded-2xl border overflow-hidden shadow-sm" style={{ borderColor: gap.feasibility_color + "50" }}>
       {/* Header */}
@@ -103,8 +111,7 @@ export function GapAnalysisPanel({ gap, compact = false }: GapCardProps) {
             <span className="text-sm font-semibold text-slate-700">Education</span>
             {gap.education_gap.has_gap
               ? <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Gap</span>
-              : <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">✓ Met</span>
-            }
+              : <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">✓ Met</span>}
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 flex-wrap">
             <span className={`px-2 py-1 rounded-lg text-xs font-medium ${gap.education_gap.has_gap ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
@@ -130,13 +137,12 @@ export function GapAnalysisPanel({ gap, compact = false }: GapCardProps) {
             <span className="text-sm font-semibold text-slate-700">Age Eligibility</span>
             {gap.age_status.ok
               ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">✓ Ok</span>
-              : <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Gap</span>
-            }
+              : <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Gap</span>}
           </div>
           <p className="text-xs text-slate-600">{gap.age_status.message}</p>
         </div>
 
-        {/* Skills to develop */}
+        {/* Skills */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Lightbulb className="w-4 h-4 text-yellow-500" />
@@ -144,9 +150,7 @@ export function GapAnalysisPanel({ gap, compact = false }: GapCardProps) {
           </div>
           <div className="flex flex-wrap gap-2">
             {gap.skills_to_acquire.map((skill) => (
-              <span key={skill} className="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200">
-                {skill}
-              </span>
+              <span key={skill} className="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200">{skill}</span>
             ))}
           </div>
         </div>
@@ -159,6 +163,48 @@ export function GapAnalysisPanel({ gap, compact = false }: GapCardProps) {
             <p className="text-xs text-slate-700">{gap.recommendation}</p>
           </div>
         </div>
+
+        {/* Chat about gap CTA */}
+        {onChatAboutGap && (
+          <Button
+            onClick={onChatAboutGap}
+            className="w-full gap-2 text-sm"
+            style={{ background: gap.feasibility_color }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            Ask AI: How can I bridge this gap?
+          </Button>
+        )}
+
+        {/* Alternative careers when not feasible / long journey */}
+        {showAlternatives && (
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <ArrowRight className="w-4 h-4 text-blue-600" />
+              Achievable Alternatives for You
+            </p>
+            <div className="space-y-2">
+              {alternatives!.map((alt) => (
+                <Link key={alt.id} href={`/career/${alt.id}`}
+                  className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{alt.title}</p>
+                    {alt.title_hi && <p className="text-xs text-slate-400 truncate">{alt.title_hi}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                      style={{ background: alt.feasibility_color + "18", color: alt.feasibility_color }}>
+                      {alt.feasibility_label}
+                    </span>
+                    <span className="w-7 h-7 rounded-full bg-blue-700 text-white text-[10px] font-bold flex items-center justify-center">
+                      {alt.match_score}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

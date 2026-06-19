@@ -1,7 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, Search, Bot, User, RefreshCw, FileDown, UserCheck, ExternalLink } from "lucide-react";
+import { Send, Loader2, Search, Bot, User, RefreshCw, FileDown, UserCheck, ExternalLink, Mic } from "lucide-react";
+import dynamic from "next/dynamic";
+const VoiceWidget = dynamic(() => import("./voice-widget").then((m) => m.VoiceWidget), { ssr: false });
 import { Button } from "./ui/button";
 import { useProfileStore } from "@/store/profile";
 import { getCareerById } from "@/lib/career-engine";
@@ -28,7 +30,7 @@ Keep it brief and practical. End with 2 specific follow-up questions.`;
 }
 
 export function ChatInterface() {
-  const { profile, selectedCareerId, chatHistory, addChatMessage, clearChat, language } = useProfileStore();
+  const { profile, selectedCareerId, chatHistory, addChatMessage, clearChat, language, gapChatTrigger, setGapChatTrigger } = useProfileStore();
   const tr = useT(language);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +40,8 @@ export function ChatInterface() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [showMentors, setShowMentors] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [lastAIMessage, setLastAIMessage] = useState<string | null>(null);
   const autoStartedRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -51,6 +55,16 @@ export function ChatInterface() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory, streamingText]);
+
+  // Consume gap chat trigger from career detail page
+  useEffect(() => {
+    if (!gapChatTrigger) return;
+    setGapChatTrigger(null);
+    clearChat();
+    autoStartedRef.current = true;
+    sendMessage(gapChatTrigger.gapSummary);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gapChatTrigger]);
 
   // Auto-start conversation when career is selected and chat is empty
   useEffect(() => {
@@ -90,6 +104,7 @@ export function ChatInterface() {
       }
       if (fullText.trim()) {
         addChatMessage({ role: "assistant", content: fullText });
+        setLastAIMessage(fullText);
         setShowMentors(true);
       } else {
         addChatMessage({ role: "assistant", content: "⚠️ Could not get a response. Please type your question below or try again." });
@@ -129,6 +144,7 @@ export function ChatInterface() {
         }
       }
       addChatMessage({ role: "assistant", content: fullText });
+      setLastAIMessage(fullText);
       setStreamingText("");
       if (!showMentors) setShowMentors(true);
     } catch {
@@ -560,6 +576,21 @@ export function ChatInterface() {
 
       {/* Input */}
       <div className="border-t border-slate-100 p-3">
+        {voiceMode && (
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-xs text-slate-400">
+              {language === "hi" ? "माइक बटन दबाकर बोलें" : language === "hinglish" ? "Mic press karke bolo" : "Press mic and speak"}
+            </span>
+            <VoiceWidget
+              language={language}
+              onTranscript={(t) => { setInput(t); }}
+              lastAIMessage={lastAIMessage}
+              isAILoading={isLoading}
+              onGeneratePDF={generatePDF}
+              pdfGenerating={pdfGenerating}
+            />
+          </div>
+        )}
         <div className="flex gap-2">
           <input value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage(input)}
@@ -569,6 +600,15 @@ export function ChatInterface() {
           <Button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()}
             size="icon" className="rounded-xl w-10 h-10 bg-blue-700 hover:bg-blue-800">
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </Button>
+          <Button
+            onClick={() => setVoiceMode((v) => !v)}
+            variant="ghost"
+            size="icon"
+            className={`rounded-xl w-10 h-10 ${voiceMode ? "text-blue-700 bg-blue-50" : "text-slate-400"}`}
+            title={voiceMode ? "Voice mode on" : "Enable voice mode"}
+          >
+            <Mic className="w-4 h-4" />
           </Button>
           {chatHistory.length > 0 && (
             <Button onClick={handleClearChat} variant="ghost" size="icon" className="rounded-xl w-10 h-10">

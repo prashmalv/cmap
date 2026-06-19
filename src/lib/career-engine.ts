@@ -285,11 +285,42 @@ export function matchCareers(profile: UserProfile): CareerMatch[] {
       } as CareerMatch;
     })
     .filter((m) => m.eligibility !== "ineligible")
-    .sort((a, b) => b.match_score - a.match_score);
+    .sort((a, b) => {
+      // Tier 1: eligible+rajasthan > eligible+general > partial+rajasthan > partial+general
+      const tier = (m: CareerMatch) => {
+        const isRaj = !!(m.career as { rajasthan_relevance?: unknown }).rajasthan_relevance;
+        if (m.eligibility === "eligible" && isRaj)  return 3;
+        if (m.eligibility === "eligible" && !isRaj) return 2;
+        if (m.eligibility === "partial"  && isRaj)  return 1;
+        return 0;
+      };
+      const tierDiff = tier(b) - tier(a);
+      if (tierDiff !== 0) return tierDiff;
+      return b.match_score - a.match_score;
+    });
 }
 
 export function getCareerById(id: string) {
   return matrixData.careers.find((c) => c.id === id) ?? null;
+}
+
+export function getAlternativeCareers(
+  profile: UserProfile,
+  careerId: string,
+  limit = 3
+): CareerMatch[] {
+  const source = matrixData.careers.find((c) => c.id === careerId);
+  if (!source) return [];
+  return matchCareers(profile)
+    .filter(
+      (m) =>
+        m.career.id !== careerId &&
+        (m.career.category === source.category ||
+          m.career.tags.some((t) => source.tags.includes(t))) &&
+        (m.gap_analysis.feasibility === "ready" ||
+          m.gap_analysis.feasibility === "achievable")
+    )
+    .slice(0, limit);
 }
 
 export function getCategories() {
