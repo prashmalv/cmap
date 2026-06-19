@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, Search, Bot, User, RefreshCw, FileDown, UserCheck, ExternalLink, Mic } from "lucide-react";
 import dynamic from "next/dynamic";
 const VoiceWidget = dynamic(() => import("./voice-widget").then((m) => m.VoiceWidget), { ssr: false });
+const AvatarCounselor = dynamic(() => import("./voice-widget").then((m) => m.AvatarCounselor), { ssr: false });
 import { Button } from "./ui/button";
 import { useProfileStore } from "@/store/profile";
 import { getCareerById } from "@/lib/career-engine";
@@ -435,6 +436,18 @@ export function ChatInterface() {
               {language === "hi" ? "रिपोर्ट PDF" : "Report PDF"}
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Avatar panel — shown when voice mode is active */}
+      {voiceMode && (
+        <div className="border-b border-indigo-100 bg-gradient-to-b from-indigo-50 to-white px-4">
+          <AvatarCounselor
+            language={language}
+            onTranscript={(t) => { setInput(t); sendMessage(t); }}
+            lastAIMessage={lastAIMessage}
+            isAILoading={isLoading}
+          />
         </div>
       )}
 
