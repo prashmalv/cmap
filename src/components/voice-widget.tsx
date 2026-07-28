@@ -94,20 +94,42 @@ function useSpeech(language: Lang) {
     setSupported(!!(SpeechRec && window.speechSynthesis));
   }, []);
 
-  const speak = useCallback((text: string) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
+  const speak = useCallback(async (text: string) => {
+    window.speechSynthesis?.cancel();
+    setSpeaking(true);
     const clean = stripMarkdown(text).slice(0, 600);
+
+    // ── ElevenLabs path ────────────────────────────────────────────────────
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
+      });
+      if (!res.ok) throw new Error("EL " + res.status);
+      const buf = await res.arrayBuffer();
+      const ctx = new AudioContext();
+      const decoded = await ctx.decodeAudioData(buf);
+      const src = ctx.createBufferSource();
+      src.buffer = decoded;
+      src.connect(ctx.destination);
+      src.onended = () => { setSpeaking(false); try { ctx.close(); } catch {} };
+      src.start(0);
+      return;
+    } catch {
+      // fall through to Web Speech API
+    }
+
+    // ── Web Speech API fallback ────────────────────────────────────────────
+    if (!window.speechSynthesis) { setSpeaking(false); return; }
     const utt = new SpeechSynthesisUtterance(clean);
     const langCode = language === "hi" ? "hi-IN" : "en-IN";
     utt.lang = langCode;
-    // Voices load async — try to pick best available voice
     const bestVoice = pickVoice(langCode);
     if (bestVoice) utt.voice = bestVoice;
-    utt.rate = bestVoice ? 0.88 : 0.82;   // named voices can go faster; default TTS needs slower rate
-    utt.pitch = 1.0;                        // neutral pitch sounds more natural than elevated
+    utt.rate = bestVoice ? 0.88 : 0.82;
+    utt.pitch = 1.0;
     utt.volume = 1;
-    utt.onstart = () => setSpeaking(true);
     utt.onend = () => setSpeaking(false);
     utt.onerror = () => setSpeaking(false);
     window.speechSynthesis.speak(utt);

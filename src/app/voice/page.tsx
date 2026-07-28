@@ -180,10 +180,11 @@ export default function VoicePage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transcriptRef = useRef("");
   const turnsEndRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     const SpeechRec = getSpeechRecognition();
-    setSupported(!!(SpeechRec && window.speechSynthesis));
+    setSupported(!!SpeechRec); // TTS via ElevenLabs; only need STT
   }, []);
 
   useEffect(() => {
@@ -204,12 +205,42 @@ export default function VoicePage() {
     return `${m}:${sec}`;
   }
 
-  // ── TTS: speak then auto-listen ──────────────────────────────────────────
-  const speakThenListen = useCallback((text: string) => {
-    if (!callActiveRef.current || !window.speechSynthesis) return;
+  // ── TTS: speak then auto-listen (ElevenLabs → Web Speech fallback) ─────────
+  const speakThenListen = useCallback(async (text: string) => {
+    if (!callActiveRef.current) return;
     setCallState("ai_speaking");
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel();
     const clean = stripMarkdown(text).slice(0, 550);
+
+    // ── ElevenLabs path ──────────────────────────────────────────────────────
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
+      });
+      if (!res.ok) throw new Error("EL " + res.status);
+      const buf = await res.arrayBuffer();
+      if (!callActiveRef.current) return;
+      try { audioCtxRef.current?.close(); } catch {}
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      const decoded = await ctx.decodeAudioData(buf);
+      const src = ctx.createBufferSource();
+      src.buffer = decoded;
+      src.connect(ctx.destination);
+      src.onended = () => {
+        try { ctx.close(); } catch {}
+        if (callActiveRef.current) startListening();
+      };
+      src.start(0);
+      return;
+    } catch {
+      // fall through to Web Speech API
+    }
+
+    // ── Web Speech API fallback ──────────────────────────────────────────────
+    if (!window.speechSynthesis) return;
     const utt = new SpeechSynthesisUtterance(clean);
     const langCode = lang === "hi" ? "hi-IN" : "en-IN";
     utt.lang = langCode;
@@ -221,6 +252,7 @@ export default function VoicePage() {
     utt.onend = () => { if (callActiveRef.current) startListening(); };
     utt.onerror = () => { if (callActiveRef.current) startListening(); };
     window.speechSynthesis.speak(utt);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
   // ── STT: listen for user speech ──────────────────────────────────────────
@@ -326,6 +358,7 @@ export default function VoicePage() {
     callActiveRef.current = false;
     recognitionRef.current?.abort();
     window.speechSynthesis?.cancel();
+    try { audioCtxRef.current?.close(); } catch {}
     if (timerRef.current) clearInterval(timerRef.current);
     setCallState("idle");
     setCallActive(false);
