@@ -1,18 +1,22 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Phone, ChevronLeft, CheckCircle, Loader2, Clock } from "lucide-react";
+import { Phone, ChevronLeft, PhoneOff, Loader2 } from "lucide-react";
+// CheckCircle, Clock removed — no longer used after call screen redesign
 import { useProfileStore } from "@/store/profile";
 
 export default function CallbackPage() {
   const { profile, language } = useProfileStore();
+  const router = useRouter();
   const lang = language;
   const [name, setName] = useState(profile?.name ?? "");
   const [phone, setPhone] = useState("");
   const [prefLang, setPrefLang] = useState<"hi" | "en">(lang === "hi" ? "hi" : "en");
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [calling, setCalling] = useState(false);
+  const [hungUp, setHungUp] = useState(false);
 
   const hi = lang === "hi";
 
@@ -26,12 +30,77 @@ export default function CallbackPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, phone, language: prefLang, topic }),
       });
-      setSubmitted(true);
-    } catch {
-      setSubmitted(true); // show confirmation even if network hiccup
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* still show calling screen */ }
+    setLoading(false);
+    setCalling(true);
+  }
+
+  function hangUp() {
+    setHungUp(true);
+    setTimeout(() => router.push("/dashboard"), 1800);
+  }
+
+  // ── Calling screen ──────────────────────────────────────────────────────
+  if (calling) {
+    const displayPhone = "+91 " + phone.replace(/(\d{5})(\d{5})/, "$1 $2");
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-between py-16 px-6">
+        <style>{`
+          @keyframes cbRing{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.9);opacity:0}}
+          @keyframes cbPulse{0%,100%{opacity:1}50%{opacity:.4}}
+        `}</style>
+
+        {/* Top: number info */}
+        <div className="text-center pt-8">
+          <p className="text-slate-400 text-xs tracking-widest uppercase mb-3">
+            {hungUp ? (hi ? "कॉल समाप्त" : "Call Khatam") : (hi ? "कॉल हो रही है…" : "Calling…")}
+          </p>
+          <p className="text-white text-3xl font-light tracking-wide">{displayPhone}</p>
+          {name && <p className="text-slate-400 text-sm mt-1">{name}</p>}
+        </div>
+
+        {/* Center: animated ring + icon */}
+        <div className="relative flex items-center justify-center" style={{ width: 160, height: 160 }}>
+          {!hungUp && (<>
+            <div className="absolute inset-0 rounded-full border border-green-400/40"
+              style={{ animation: "cbRing 1.6s ease-out infinite" }} />
+            <div className="absolute inset-0 rounded-full border border-green-400/30"
+              style={{ animation: "cbRing 1.6s ease-out 0.6s infinite" }} />
+            <div className="absolute inset-0 rounded-full border border-green-400/20"
+              style={{ animation: "cbRing 1.6s ease-out 1.1s infinite" }} />
+          </>)}
+          <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-500 ${
+            hungUp ? "bg-slate-700" : "bg-green-600"
+          }`}>
+            {hungUp
+              ? <PhoneOff className="w-9 h-9 text-slate-300" />
+              : <Phone className="w-9 h-9 text-white" style={{ animation: "cbPulse 1.4s ease-in-out infinite" }} />
+            }
+          </div>
+        </div>
+
+        {/* Bottom: hang up button */}
+        <div className="flex flex-col items-center gap-4">
+          {!hungUp ? (
+            <>
+              <button
+                onClick={hangUp}
+                className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center shadow-lg shadow-red-500/30 transition-all hover:scale-105 active:scale-95"
+              >
+                <PhoneOff className="w-7 h-7 text-white" />
+              </button>
+              <p className="text-slate-600 text-xs">
+                {hi ? "कॉल काटने के लिए दबाएं" : "Call kaatne ke liye dabaaein"}
+              </p>
+            </>
+          ) : (
+            <p className="text-slate-500 text-sm">
+              {hi ? "Dashboard पर जा रहे हैं…" : "Dashboard pe ja rahe hain…"}
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -44,44 +113,13 @@ export default function CallbackPage() {
             </button>
           </Link>
           <h1 className="font-semibold text-slate-900 text-sm">
-            {hi ? "AI Callback Request" : "AI Callback Request"}
+            {hi ? "Call Request" : "Call Request"}
           </h1>
         </div>
       </div>
 
       <div className="flex-1 max-w-md mx-auto w-full px-4 py-8">
-        {submitted ? (
-          <div className="flex flex-col items-center justify-center text-center py-12 gap-5">
-            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="w-10 h-10 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">
-                {hi ? "Request दर्ज हो गई!" : "Request Register Ho Gayi!"}
-              </h2>
-              <p className="text-slate-500 text-sm leading-relaxed max-w-xs">
-                {hi
-                  ? `हम जल्द ही ${phone} पर आपको call करेंगे। आमतौर पर 24 घंटे के अंदर callback आती है।`
-                  : `Hum jald hi ${phone} pe aapko call karenge. Aamtaur par 24 ghante ke andar callback aati hai.`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
-              <Clock className="w-4 h-4 shrink-0" />
-              {hi ? "अनुमानित समय: 24 घंटे के भीतर" : "Estimated time: 24 ghante ke andar"}
-            </div>
-            <div className="flex gap-3 mt-2">
-              <Link href="/voice"
-                className="px-5 py-2.5 rounded-full bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
-                {hi ? "अभी Voice Call करें" : "Abhi Voice Call Karein"}
-              </Link>
-              <Link href="/dashboard"
-                className="px-5 py-2.5 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">
-                {hi ? "Dashboard" : "Dashboard"}
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <>
+        <>
             {/* Hero */}
             <div className="text-center mb-8">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
@@ -186,8 +224,7 @@ export default function CallbackPage() {
                 {hi ? "In-App Voice Call" : "In-App Voice Call"}
               </Link>
             </div>
-          </>
-        )}
+        </>
       </div>
     </div>
   );
