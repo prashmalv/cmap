@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { MapPin, Bot, Network, Filter, RefreshCw, User } from "lucide-react";
+import { MapPin, Bot, Network, Filter, RefreshCw, User, Phone, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CareerCard } from "@/components/career-card";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -102,8 +102,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Profile banner */}
-        {profile && (
+        {/* Profile banner + Voice CTA */}
+        {profile && (<>
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -121,22 +121,67 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-green-300">{eligibleCount}</div>
-                <div className="text-xs text-blue-200">{tr("dash_eligible")}</div>
+            <div className="flex flex-col sm:flex-row gap-2 items-center">
+              <div className="flex gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-green-300">{eligibleCount}</div>
+                  <div className="text-xs text-blue-200">{tr("dash_eligible")}</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-amber-300">{partialCount}</div>
+                  <div className="text-xs text-blue-200">{tr("dash_partial")}</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{matches.length}</div>
+                  <div className="text-xs text-blue-200">{tr("dash_total")}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-amber-300">{partialCount}</div>
-                <div className="text-xs text-blue-200">{tr("dash_partial")}</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{matches.length}</div>
-                <div className="text-xs text-blue-200">{tr("dash_total")}</div>
-              </div>
+              <Link href="/voice" className="shrink-0">
+                <Button size="sm" className="bg-green-500 hover:bg-green-400 text-white text-xs gap-1.5 px-3 shadow-lg shadow-green-500/30">
+                  <Phone className="w-3.5 h-3.5" />
+                  {language === "hi" ? "Voice Call" : "Voice Call"}
+                </Button>
+              </Link>
             </div>
           </motion.div>
-        )}
+
+          {/* Voice counsellor CTA strip */}
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl px-5 py-3.5 mb-6 flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <PhoneCall className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm leading-tight">
+                  {language === "hi" ? "AI Counselor से directly बात करें" : "AI Counselor se directly baat karein"}
+                </p>
+                <p className="text-indigo-200 text-xs mt-0.5">
+                  {language === "hi"
+                    ? "Hindi में पूछें — जैसे Alexa से बात करते हैं वैसे"
+                    : "Hindi/Hinglish mein poochein — bilkul Alexa jaisa"}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Link href="/voice">
+                <Button size="sm" className="bg-white text-indigo-700 hover:bg-indigo-50 text-xs font-semibold gap-1">
+                  <Phone className="w-3.5 h-3.5" />
+                  {language === "hi" ? "Call करें" : "Call Karein"}
+                </Button>
+              </Link>
+              <Link href="/callback">
+                <Button size="sm" variant="ghost" className="text-white hover:bg-white/20 text-xs gap-1 border border-white/30">
+                  {language === "hi" ? "Callback लें" : "Callback Lein"}
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </>)}
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters sidebar */}

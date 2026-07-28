@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { MapPin, LayoutGrid, Network, ChevronLeft } from "lucide-react";
+import { MapPin, LayoutGrid, Network, ChevronLeft, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatInterface } from "@/components/chat-interface";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -42,6 +42,11 @@ export default function ChatPage() {
                 ✕ {selectedCareer.title.slice(0, 18)}…
               </button>
             )}
+            <Link href="/voice">
+              <Button size="sm" className="text-xs bg-green-600 hover:bg-green-700 gap-1">
+                <Phone className="w-3.5 h-3.5" /> Voice
+              </Button>
+            </Link>
             <Link href="/dashboard">
               <Button size="sm" variant="outline" className="text-xs">
                 <LayoutGrid className="w-3.5 h-3.5" />
