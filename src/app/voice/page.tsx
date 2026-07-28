@@ -30,6 +30,27 @@ function getSpeechRecognition(): SpeechRecognitionCtor | undefined {
 type CallState = "idle" | "ai_speaking" | "listening" | "processing";
 interface Turn { role: "user" | "ai"; text: string; }
 
+function pickVoice(langCode: string): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  const isHindi = langCode === "hi-IN";
+  const order = isHindi ? [
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN" && v.name.toLowerCase().includes("swara"),
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN" && v.name.toLowerCase().includes("google"),
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN" && v.name.toLowerCase().includes("female"),
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN",
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("hi"),
+  ] : [
+    (v: SpeechSynthesisVoice) => v.lang === "en-IN" && v.name.toLowerCase().includes("google"),
+    (v: SpeechSynthesisVoice) => v.lang === "en-IN" && v.name.toLowerCase().includes("female"),
+    (v: SpeechSynthesisVoice) => v.lang === "en-IN",
+    (v: SpeechSynthesisVoice) => v.name === "Google UK English Female",
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("en") && v.name.toLowerCase().includes("google"),
+  ];
+  for (const matcher of order) { const f = voices.find(matcher); if (f) return f; }
+  return null;
+}
+
 function stripMarkdown(text: string): string {
   return text
     .replace(/#{1,6}\s+/g, "").replace(/\*\*(.*?)\*\*/g, "$1")
@@ -190,9 +211,13 @@ export default function VoicePage() {
     window.speechSynthesis.cancel();
     const clean = stripMarkdown(text).slice(0, 550);
     const utt = new SpeechSynthesisUtterance(clean);
-    utt.lang = lang === "hi" ? "hi-IN" : "en-IN";
-    utt.rate = 0.92;
-    utt.pitch = 1.05;
+    const langCode = lang === "hi" ? "hi-IN" : "en-IN";
+    utt.lang = langCode;
+    const bestVoice = pickVoice(langCode);
+    if (bestVoice) utt.voice = bestVoice;
+    utt.rate = bestVoice ? 0.87 : 0.80;
+    utt.pitch = 1.0;
+    utt.volume = 1;
     utt.onend = () => { if (callActiveRef.current) startListening(); };
     utt.onerror = () => { if (callActiveRef.current) startListening(); };
     window.speechSynthesis.speak(utt);

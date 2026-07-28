@@ -30,6 +30,40 @@ interface VoiceWidgetProps {
   pdfGenerating: boolean;
 }
 
+// Picks the most human-sounding voice available on this device
+function pickVoice(lang: string): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  const isHindi = lang === "hi-IN";
+
+  // Priority order for Hindi
+  const hindiOrder = [
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN" && v.name.toLowerCase().includes("swara"),    // Azure Swara — most human
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN" && v.name.toLowerCase().includes("google"),   // Google हिन्दी
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN" && v.name.toLowerCase().includes("female"),
+    (v: SpeechSynthesisVoice) => v.lang === "hi-IN",
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("hi"),
+  ];
+
+  // Priority order for Hinglish/English — prefer Indian English female
+  const engOrder = [
+    (v: SpeechSynthesisVoice) => v.lang === "en-IN" && v.name.toLowerCase().includes("google"),   // Google Indian English
+    (v: SpeechSynthesisVoice) => v.lang === "en-IN" && v.name.toLowerCase().includes("female"),
+    (v: SpeechSynthesisVoice) => v.lang === "en-IN",
+    (v: SpeechSynthesisVoice) => v.name === "Google UK English Female",
+    (v: SpeechSynthesisVoice) => v.name.toLowerCase().includes("female") && v.lang.startsWith("en"),
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("en") && v.name.toLowerCase().includes("google"),
+  ];
+
+  const order = isHindi ? hindiOrder : engOrder;
+  for (const matcher of order) {
+    const found = voices.find(matcher);
+    if (found) return found;
+  }
+  return null;
+}
+
 function stripMarkdown(text: string): string {
   return text
     .replace(/#{1,6}\s+/g, "")
@@ -65,9 +99,14 @@ function useSpeech(language: Lang) {
     window.speechSynthesis.cancel();
     const clean = stripMarkdown(text).slice(0, 600);
     const utt = new SpeechSynthesisUtterance(clean);
-    utt.lang = language === "hi" ? "hi-IN" : "en-IN";
-    utt.rate = 0.92;
-    utt.pitch = 1.05;
+    const langCode = language === "hi" ? "hi-IN" : "en-IN";
+    utt.lang = langCode;
+    // Voices load async — try to pick best available voice
+    const bestVoice = pickVoice(langCode);
+    if (bestVoice) utt.voice = bestVoice;
+    utt.rate = bestVoice ? 0.88 : 0.82;   // named voices can go faster; default TTS needs slower rate
+    utt.pitch = 1.0;                        // neutral pitch sounds more natural than elevated
+    utt.volume = 1;
     utt.onstart = () => setSpeaking(true);
     utt.onend = () => setSpeaking(false);
     utt.onerror = () => setSpeaking(false);
