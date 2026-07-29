@@ -75,8 +75,8 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
 // ─── Photo Avatar with Canvas lip-sync ───────────────────────────────────────
 //
 // Mouth tuning — pixel-verified on cmapgl.jpeg (168×300, cover+top → 188px canvas)
-const MOUTH_CX  = 0.50;   // horizontal center
-const MOUTH_CY  = 0.725;  // canvas y≈136px — confirmed at lip/teeth pixels
+const MOUTH_CX  = 0.52;   // slight right — face is fractionally right of canvas center
+const MOUTH_CY  = 0.745;  // slightly lower than prev 0.725
 const MOUTH_HW  = 0.078;  // half-width ≈15px (natural smile width)
 const MOUTH_MAX = 0.026;  // max jaw open — subtle, not exaggerated
 // Colours pixel-sampled from rendered canvas:
