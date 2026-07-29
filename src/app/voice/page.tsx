@@ -72,18 +72,131 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
     : `Namaste ${name}! Main aapki CareerMap AI career counselor hoon. Aaj main aapki career mein kaise madad kar sakti hoon?`;
 }
 
-// ─── Animated Avatar Face ────────────────────────────────────────────────────
+// ─── Photo Avatar with Canvas lip-sync ───────────────────────────────────────
+//
+// Mouth tuning constants — adjust these if lips appear offset on cmapgl.png:
+//   MOUTH_CX  : horizontal center as fraction of canvas width  (0.0–1.0)
+//   MOUTH_CY  : vertical center as fraction of canvas height   (0.0–1.0)
+//   MOUTH_HW  : half-width of mouth as fraction of width       (0.0–1.0)
+//   MOUTH_MAX : max open height as fraction of height          (0.0–1.0)
+const MOUTH_CX  = 0.50;
+const MOUTH_CY  = 0.675;
+const MOUTH_HW  = 0.105;
+const MOUTH_MAX = 0.040;
+// Colours matched to cmapgl.png — adjust if skin/lip tone differs:
+const C_SKIN = "#f2b080";
+const C_LIP  = "#c96050";
+const C_DARK = "#7a1515";
+
 function CallAvatar({ state }: { state: CallState }) {
   const speaking = state === "ai_speaking";
   const listening = state === "listening";
-  const loading = state === "processing";
+  const loading   = state === "processing";
 
-  const headStyle: React.CSSProperties = speaking
-    ? { animation: "voiceBob 0.35s ease-in-out infinite" } : {};
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  const animRef    = useRef<number>(0);
+  const imgRef     = useRef<HTMLImageElement | null>(null);
+  const loadedRef  = useRef(false);
+  const phaseRef   = useRef(0);
+  const stateRef   = useRef(state);
+  stateRef.current = state;
+
+  // Load avatar photo once
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/cmapgl.png";
+    img.onload  = () => { imgRef.current = img; loadedRef.current = true; };
+    img.onerror = () => { loadedRef.current = false; };
+  }, []);
+
+  // Continuous rAF loop — reads state via ref so deps stay empty
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const W = canvas.width;
+    const H = canvas.height;
+    const c = ctx; // stable non-null ref for closure
+
+    function frame() {
+      const s = stateRef.current;
+      const isSpeaking = s === "ai_speaking";
+
+      c.clearRect(0, 0, W, H);
+      c.save();
+      c.beginPath();
+      c.arc(W / 2, H / 2, W / 2 - 1, 0, Math.PI * 2);
+      c.clip();
+
+      if (loadedRef.current && imgRef.current) {
+        c.drawImage(imgRef.current, 0, 0, W, H);
+
+        if (isSpeaking) {
+          phaseRef.current += 0.18;
+          const open = Math.abs(Math.sin(phaseRef.current)) * (H * MOUTH_MAX) + 2;
+          const mx = W * MOUTH_CX;
+          const my = H * MOUTH_CY;
+          const hw = W * MOUTH_HW;
+
+          // Erase original static mouth
+          c.fillStyle = C_SKIN;
+          c.beginPath();
+          c.ellipse(mx, my, hw + 2, 7, 0, 0, Math.PI * 2);
+          c.fill();
+
+          // Mouth interior
+          c.fillStyle = C_DARK;
+          c.beginPath();
+          c.ellipse(mx, my + 2, hw - 3, open, 0, 0, Math.PI);
+          c.fill();
+
+          // Lower lip
+          c.fillStyle = C_LIP;
+          c.beginPath();
+          c.ellipse(mx, my + open + 1, hw - 1, 3.5, 0, 0, Math.PI);
+          c.fill();
+
+          // Upper lip
+          c.fillStyle = C_LIP;
+          c.beginPath();
+          c.ellipse(mx, my - 1, hw - 1, 3, 0, Math.PI, 0);
+          c.fill();
+        }
+      } else {
+        // Fallback gradient face when image not loaded
+        const grad = c.createRadialGradient(W * 0.38, H * 0.32, 0, W / 2, H / 2, W / 2);
+        grad.addColorStop(0, "#818cf8");
+        grad.addColorStop(1, "#1d4ed8");
+        c.fillStyle = grad;
+        c.fillRect(0, 0, W, H);
+        c.fillStyle = "rgba(255,255,255,0.9)";
+        c.beginPath(); c.ellipse(W*0.36, H*0.44, W*0.07, H*0.07, 0, 0, Math.PI*2); c.fill();
+        c.beginPath(); c.ellipse(W*0.64, H*0.44, W*0.07, H*0.07, 0, 0, Math.PI*2); c.fill();
+        if (isSpeaking) {
+          phaseRef.current += 0.18;
+          const oy = Math.abs(Math.sin(phaseRef.current)) * H * 0.04 + 2;
+          c.fillStyle = "#e0e7ff";
+          c.beginPath(); c.ellipse(W*0.5, H*0.64, W*0.10, oy, 0, 0, Math.PI*2); c.fill();
+        } else {
+          c.strokeStyle = "#e0e7ff"; c.lineWidth = 2.5;
+          c.beginPath();
+          c.moveTo(W*0.38, H*0.63); c.quadraticCurveTo(W*0.5, H*0.71, W*0.62, H*0.63);
+          c.stroke();
+        }
+      }
+
+      c.restore();
+      animRef.current = requestAnimationFrame(frame);
+    }
+
+    frame();
+    return () => cancelAnimationFrame(animRef.current);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 180, height: 180 }}>
-      {/* Listening pulse rings */}
+    <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
+      {/* Listening rings */}
       {listening && (<>
         <div className="absolute inset-0 rounded-full border-2 border-red-400 opacity-70"
           style={{ animation: "voiceRing 1.2s ease-out infinite" }} />
@@ -93,55 +206,29 @@ function CallAvatar({ state }: { state: CallState }) {
       {/* Speaking glow */}
       {speaking && (
         <div className="absolute inset-0 rounded-full"
-          style={{ animation: "voiceGlow 0.8s ease-in-out infinite", background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)" }} />
+          style={{ animation: "voiceGlow 0.8s ease-in-out infinite", background: "radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%)" }} />
       )}
-      <div style={headStyle}>
-        <svg width="160" height="160" viewBox="0 0 100 100">
-          <defs>
-            <radialGradient id="vcFace" cx="38%" cy="32%">
-              <stop offset="0%" stopColor="#818cf8" />
-              <stop offset="100%" stopColor="#1d4ed8" />
-            </radialGradient>
-          </defs>
-          {/* Face */}
-          <circle cx="50" cy="50" r="46" fill="url(#vcFace)" />
-          <ellipse cx="34" cy="26" rx="13" ry="8" fill="white" opacity="0.1" />
-          {/* Eyebrows */}
-          <path d="M26 33 Q32 29 38 31" stroke="#a5b4fc" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-          <path d="M62 31 Q68 29 74 33" stroke="#a5b4fc" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-          {/* Left eye */}
-          <g style={{ transformOrigin: "33px 42px", animation: "vcBlink 3.8s ease-in-out infinite" }}>
-            <ellipse cx="33" cy="42" rx="7" ry="7" fill="white" opacity="0.9" />
-            <circle cx="34" cy="43" r="4.2" fill="#1e1b4b" />
-            <circle cx="35.5" cy="41.5" r="1.4" fill="white" opacity="0.9" />
-          </g>
-          {/* Right eye */}
-          <g style={{ transformOrigin: "67px 42px", animation: "vcBlink 3.8s ease-in-out 0.8s infinite" }}>
-            <ellipse cx="67" cy="42" rx="7" ry="7" fill="white" opacity="0.9" />
-            <circle cx="68" cy="43" r="4.2" fill="#1e1b4b" />
-            <circle cx="69.5" cy="41.5" r="1.4" fill="white" opacity="0.9" />
-          </g>
-          <circle cx="50" cy="55" r="1.5" fill="#a5b4fc" opacity="0.6" />
-          {/* Mouth */}
-          {loading ? (<>
-            <circle cx="40" cy="67" r="3" fill="#e0e7ff" opacity="0.9">
-              <animate attributeName="cy" values="67;62;67" dur="0.8s" begin="0s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="50" cy="67" r="3" fill="#e0e7ff" opacity="0.9">
-              <animate attributeName="cy" values="67;62;67" dur="0.8s" begin="0.2s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="60" cy="67" r="3" fill="#e0e7ff" opacity="0.9">
-              <animate attributeName="cy" values="67;62;67" dur="0.8s" begin="0.4s" repeatCount="indefinite" />
-            </circle>
-          </>) : speaking ? (
-            <ellipse cx="50" cy="67" rx="10" ry="1" fill="#e0e7ff" opacity="0.95">
-              <animate attributeName="ry" values="1;7;1" dur="0.28s" repeatCount="indefinite" />
-            </ellipse>
-          ) : (
-            <path d="M38 65 Q50 73 62 65" stroke="#e0e7ff" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.9" />
-          )}
-        </svg>
-      </div>
+      <canvas
+        ref={canvasRef}
+        width={188}
+        height={188}
+        style={{
+          borderRadius: "50%",
+          border: "3px solid rgba(255,255,255,0.15)",
+          boxShadow: speaking
+            ? "0 0 28px rgba(99,102,241,0.5), 0 4px 20px rgba(0,0,0,0.4)"
+            : "0 4px 20px rgba(0,0,0,0.35)",
+        }}
+      />
+      {/* Processing dots */}
+      {loading && (
+        <div className="absolute bottom-3 flex gap-1.5">
+          {[0,1,2].map(i => (
+            <div key={i} className="w-2 h-2 rounded-full bg-white/60"
+              style={{ animation: `vcWave 0.8s ease-in-out ${i*0.2}s infinite` }} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
