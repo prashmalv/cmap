@@ -74,19 +74,19 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
 
 // ─── Photo Avatar with Canvas lip-sync ───────────────────────────────────────
 //
-// Mouth tuning constants — adjust these if lips appear offset on cmapgl.png:
-//   MOUTH_CX  : horizontal center as fraction of canvas width  (0.0–1.0)
-//   MOUTH_CY  : vertical center as fraction of canvas height   (0.0–1.0)
-//   MOUTH_HW  : half-width of mouth as fraction of width       (0.0–1.0)
-//   MOUTH_MAX : max open height as fraction of height          (0.0–1.0)
+// Mouth tuning constants for cmapgl.jpeg (168×300 portrait, cover+top scaled to 188px canvas)
+//   CX  : horizontal center fraction — 0.50 = perfectly centered
+//   CY  : vertical fraction after cover+top scaling — mouth at ~y=151/188
+//   HW  : half-width of mouth as fraction of canvas width
+//   MAX : max jaw-open height as fraction of canvas height
 const MOUTH_CX  = 0.50;
-const MOUTH_CY  = 0.675;
-const MOUTH_HW  = 0.105;
-const MOUTH_MAX = 0.040;
-// Colours matched to cmapgl.png — adjust if skin/lip tone differs:
-const C_SKIN = "#f2b080";
-const C_LIP  = "#c96050";
-const C_DARK = "#7a1515";
+const MOUTH_CY  = 0.80;
+const MOUTH_HW  = 0.115;
+const MOUTH_MAX = 0.048;
+// Colours matched to cmapgl.jpeg cartoon skin/lip tones:
+const C_SKIN = "#ebb984";   // warm tan skin (cover original smile)
+const C_LIP  = "#c97060";   // coral-red lips
+const C_DARK = "#f0ece0";   // off-white teeth (visible on open mouth)
 
 function CallAvatar({ state }: { state: CallState }) {
   const speaking = state === "ai_speaking";
@@ -104,7 +104,7 @@ function CallAvatar({ state }: { state: CallState }) {
   // Load avatar photo once
   useEffect(() => {
     const img = new Image();
-    img.src = "/cmapgl.png";
+    img.src = "/cmapgl.jpeg";
     img.onload  = () => { imgRef.current = img; loadedRef.current = true; };
     img.onerror = () => { loadedRef.current = false; };
   }, []);
@@ -130,7 +130,9 @@ function CallAvatar({ state }: { state: CallState }) {
       c.clip();
 
       if (loadedRef.current && imgRef.current) {
-        c.drawImage(imgRef.current, 0, 0, W, H);
+        // Cover+top: scale by width, align to top, canvas clips the bottom
+        const drawH = W * (imgRef.current.naturalHeight / imgRef.current.naturalWidth);
+        c.drawImage(imgRef.current, 0, 0, W, drawH);
 
         if (isSpeaking) {
           phaseRef.current += 0.18;
