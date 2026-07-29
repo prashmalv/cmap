@@ -47,6 +47,23 @@ body {
 .chat-md blockquote { border-left: 3px solid #1d4ed8; padding-left: 0.75rem; color: #475569; margin: 0.4rem 0; }
 .chat-md hr { border: none; border-top: 1px solid #e2e8f0; margin: 0.6rem 0; }
 
+/* Avatar two-image lip-sync */
+.avatar-face {
+  object-position: 50% 8%;
+  transform: scale(1.7);
+  transform-origin: 50% 12%;
+}
+.avatar-speaking-frame {
+  animation: avatar-frame-talk 280ms steps(1, end) infinite;
+}
+@keyframes avatar-frame-talk {
+  0%, 42% { opacity: 0; }
+  43%, 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-speaking-frame { animation: none; opacity: 1; }
+}
+
 /* Tables */
 .chat-md table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.82rem; border-radius: 8px; overflow: hidden; }
 .chat-md thead tr { background: #1d4ed8; color: #fff; }

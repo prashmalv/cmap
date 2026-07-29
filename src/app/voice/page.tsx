@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { PhoneOff, ChevronLeft, Phone } from "lucide-react";
 import { useProfileStore } from "@/store/profile";
@@ -72,84 +73,12 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
     : `Namaste ${name}! Main aapki CareerMap AI career counselor hoon. Aaj main aapki career mein kaise madad kar sakti hoon?`;
 }
 
-// ─── Photo Avatar with Canvas lip-sync ───────────────────────────────────────
-//
+// ─── Photo Avatar with two-image speaking swap ───────────────────────────────
 
 function CallAvatar({ state }: { state: CallState }) {
   const speaking = state === "ai_speaking";
   const listening = state === "listening";
   const loading   = state === "processing";
-
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const animRef    = useRef<number>(0);
-  const imgRef     = useRef<HTMLImageElement | null>(null);
-  const loadedRef  = useRef(false);
-  const phaseRef   = useRef(0);
-  const stateRef   = useRef(state);
-  stateRef.current = state;
-
-  // Load avatar photo once
-  useEffect(() => {
-    const img = new Image();
-    img.src = "/cmapgl.jpeg";
-    img.onload  = () => { imgRef.current = img; loadedRef.current = true; };
-    img.onerror = () => { loadedRef.current = false; };
-  }, []);
-
-  // Continuous rAF loop — reads state via ref so deps stay empty
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const W = canvas.width;
-    const H = canvas.height;
-    const c = ctx; // stable non-null ref for closure
-
-    function frame() {
-      const s = stateRef.current;
-      const isSpeaking = s === "ai_speaking";
-
-      c.clearRect(0, 0, W, H);
-      c.save();
-      c.beginPath();
-      c.arc(W / 2, H / 2, W / 2 - 1, 0, Math.PI * 2);
-      c.clip();
-
-      if (loadedRef.current && imgRef.current) {
-        // Cover+top: scale by width, align to top, canvas clips the bottom
-        const drawH = W * (imgRef.current.naturalHeight / imgRef.current.naturalWidth);
-        c.drawImage(imgRef.current, 0, 0, W, drawH);
-      } else {
-        // Fallback gradient face when image not loaded
-        const grad = c.createRadialGradient(W * 0.38, H * 0.32, 0, W / 2, H / 2, W / 2);
-        grad.addColorStop(0, "#818cf8");
-        grad.addColorStop(1, "#1d4ed8");
-        c.fillStyle = grad;
-        c.fillRect(0, 0, W, H);
-        c.fillStyle = "rgba(255,255,255,0.9)";
-        c.beginPath(); c.ellipse(W*0.36, H*0.44, W*0.07, H*0.07, 0, 0, Math.PI*2); c.fill();
-        c.beginPath(); c.ellipse(W*0.64, H*0.44, W*0.07, H*0.07, 0, 0, Math.PI*2); c.fill();
-        if (isSpeaking) {
-          phaseRef.current += 0.18;
-          const oy = Math.abs(Math.sin(phaseRef.current)) * H * 0.04 + 2;
-          c.fillStyle = "#e0e7ff";
-          c.beginPath(); c.ellipse(W*0.5, H*0.64, W*0.10, oy, 0, 0, Math.PI*2); c.fill();
-        } else {
-          c.strokeStyle = "#e0e7ff"; c.lineWidth = 2.5;
-          c.beginPath();
-          c.moveTo(W*0.38, H*0.63); c.quadraticCurveTo(W*0.5, H*0.71, W*0.62, H*0.63);
-          c.stroke();
-        }
-      }
-
-      c.restore();
-      animRef.current = requestAnimationFrame(frame);
-    }
-
-    frame();
-    return () => cancelAnimationFrame(animRef.current);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
@@ -165,18 +94,36 @@ function CallAvatar({ state }: { state: CallState }) {
         <div className="absolute inset-0 rounded-full"
           style={{ animation: "voiceGlow 0.8s ease-in-out infinite", background: "radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%)" }} />
       )}
-      <canvas
-        ref={canvasRef}
-        width={188}
-        height={188}
+      {/* Two-image avatar: idle base + speaking overlay */}
+      <div
+        className="relative overflow-hidden rounded-full"
         style={{
-          borderRadius: "50%",
+          width: 188,
+          height: 188,
           border: "3px solid rgba(255,255,255,0.15)",
           boxShadow: speaking
             ? "0 0 28px rgba(99,102,241,0.5), 0 4px 20px rgba(0,0,0,0.4)"
             : "0 4px 20px rgba(0,0,0,0.35)",
         }}
-      />
+      >
+        {/* Idle image — always visible underneath */}
+        <Image
+          src="/ai-saheli-avatar.png"
+          alt=""
+          fill
+          priority
+          sizes="188px"
+          className="avatar-face object-cover"
+        />
+        {/* Speaking image — flickers via CSS animation when AI is speaking */}
+        <Image
+          src="/ai-saheli-avatar-speaking.png"
+          alt=""
+          fill
+          sizes="188px"
+          className={`avatar-face object-cover opacity-0${speaking ? " avatar-speaking-frame" : ""}`}
+        />
+      </div>
       {/* Processing dots */}
       {loading && (
         <div className="absolute bottom-3 flex gap-1.5">
