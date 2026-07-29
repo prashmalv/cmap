@@ -65,11 +65,11 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
   if (lang === "hi") {
     return careerTitle
       ? `नमस्ते ${name}! मैं आपका CareerMap AI career counselor हूँ। आप ${careerTitle} के बारे में जानना चाहते हैं? बताइए, आपके मन में क्या सवाल है?`
-      : `नमस्ते ${name}! मैं CareerMap AI career counselor हूँ। आज आपकी career guidance में कैसे मदद कर सकता हूँ?`;
+      : `नमस्ते ${name}! मैं CareerMap AI career counselor हूँ। आज आपकी career guidance में कैसे मदद कर सकती हूँ?`;
   }
   return careerTitle
-    ? `Namaste ${name}! Main aapka CareerMap AI career counselor hoon. Aap ${careerTitle} ke baare mein poochna chahte hain? Bataiye, kya sawaal hai?`
-    : `Namaste ${name}! Main aapka CareerMap AI career counselor hoon. Aaj main aapki career mein kaise madad kar sakta hoon?`;
+    ? `Namaste ${name}! Main aapki CareerMap AI career counselor hoon. Aap ${careerTitle} ke baare mein poochna chahte hain? Bataiye, kya sawaal hai?`
+    : `Namaste ${name}! Main aapki CareerMap AI career counselor hoon. Aaj main aapki career mein kaise madad kar sakti hoon?`;
 }
 
 // ─── Animated Avatar Face ────────────────────────────────────────────────────
