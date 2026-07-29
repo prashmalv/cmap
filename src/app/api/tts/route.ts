@@ -4,9 +4,8 @@ const REGION = process.env.AZURE_SPEECH_REGION ?? "eastus";
 const TTS_URL = `https://${REGION}.tts.speech.microsoft.com/cognitiveservices/v1`;
 
 function buildSSML(text: string, lang: string): string {
-  const isHindi = lang === "hi";
-  const voiceName = isHindi ? "hi-IN-SwaraNeural" : "hi-IN-MadhurNeural";
-  const xmlLang = isHindi ? "hi-IN" : "hi-IN";
+  const voiceName = "hi-IN-SwaraNeural"; // always female; handles Hindi + Hinglish
+  const xmlLang = "hi-IN";
   const safeText = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

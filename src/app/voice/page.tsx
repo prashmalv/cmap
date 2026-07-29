@@ -74,19 +74,15 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
 
 // ─── Photo Avatar with Canvas lip-sync ───────────────────────────────────────
 //
-// Mouth tuning constants for cmapgl.jpeg (168×300 portrait, cover+top scaled to 188px canvas)
-//   CX  : horizontal center fraction — 0.50 = perfectly centered
-//   CY  : vertical fraction after cover+top scaling — mouth at ~y=151/188
-//   HW  : half-width of mouth as fraction of canvas width
-//   MAX : max jaw-open height as fraction of canvas height
-const MOUTH_CX  = 0.50;
-const MOUTH_CY  = 0.80;
-const MOUTH_HW  = 0.115;
-const MOUTH_MAX = 0.048;
-// Colours matched to cmapgl.jpeg cartoon skin/lip tones:
-const C_SKIN = "#ebb984";   // warm tan skin (cover original smile)
-const C_LIP  = "#c97060";   // coral-red lips
-const C_DARK = "#f0ece0";   // off-white teeth (visible on open mouth)
+// Mouth tuning — pixel-verified on cmapgl.jpeg (168×300, cover+top → 188px canvas)
+const MOUTH_CX  = 0.50;   // horizontal center (perfectly centred)
+const MOUTH_CY  = 0.73;   // canvas y≈137px  — pixel-confirmed at teeth/lips row
+const MOUTH_HW  = 0.115;  // half-width ≈22px
+const MOUTH_MAX = 0.050;  // max jaw open
+// Colours sampled from canvas rendering:
+const C_SKIN = "#e8a282";   // skin tone above/below lips
+const C_LIP  = "#b94040";   // lip colour (sampled at y=135)
+const C_DARK = "#f8f4f0";   // teeth (almost white — she smiles with teeth)
 
 function CallAvatar({ state }: { state: CallState }) {
   const speaking = state === "ai_speaking";
@@ -456,9 +452,9 @@ export default function VoicePage() {
 
   const stateLabel = {
     idle: lang === "hi" ? "तैयार हूँ…" : "Ready…",
-    listening: lang === "hi" ? "सुन रहा हूँ…" : "Sun raha hoon…",
-    processing: lang === "hi" ? "सोच रहा हूँ…" : "Soch raha hoon…",
-    ai_speaking: lang === "hi" ? "बोल रहा हूँ…" : "Bol raha hoon…",
+    listening: lang === "hi" ? "सुन रही हूँ…" : "Sun rahi hoon…",
+    processing: lang === "hi" ? "सोच रही हूँ…" : "Soch rahi hoon…",
+    ai_speaking: lang === "hi" ? "बोल रही हूँ…" : "Bol rahi hoon…",
   }[callState];
 
   const stateColor = {
