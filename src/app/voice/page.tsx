@@ -75,14 +75,14 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
 // ─── Photo Avatar with Canvas lip-sync ───────────────────────────────────────
 //
 // Mouth tuning — pixel-verified on cmapgl.jpeg (168×300, cover+top → 188px canvas)
-const MOUTH_CX  = 0.50;   // horizontal center (perfectly centred)
-const MOUTH_CY  = 0.73;   // canvas y≈137px  — pixel-confirmed at teeth/lips row
-const MOUTH_HW  = 0.115;  // half-width ≈22px
-const MOUTH_MAX = 0.050;  // max jaw open
-// Colours sampled from canvas rendering:
-const C_SKIN = "#e8a282";   // skin tone above/below lips
-const C_LIP  = "#b94040";   // lip colour (sampled at y=135)
-const C_DARK = "#f8f4f0";   // teeth (almost white — she smiles with teeth)
+const MOUTH_CX  = 0.50;   // horizontal center
+const MOUTH_CY  = 0.725;  // canvas y≈136px — confirmed at lip/teeth pixels
+const MOUTH_HW  = 0.078;  // half-width ≈15px (natural smile width)
+const MOUTH_MAX = 0.026;  // max jaw open — subtle, not exaggerated
+// Colours pixel-sampled from rendered canvas:
+const C_SKIN = "#de9c7c";   // exact face skin at y=120 (above lips)
+const C_LIP  = "#b03030";   // lip colour
+const C_DARK = "#4a1010";   // dark mouth interior (no white blob)
 
 function CallAvatar({ state }: { state: CallState }) {
   const speaking = state === "ai_speaking";
@@ -137,28 +137,28 @@ function CallAvatar({ state }: { state: CallState }) {
           const my = H * MOUTH_CY;
           const hw = W * MOUTH_HW;
 
-          // Erase original static mouth
+          // 1. Skin patch — covers full original smile (spans ±10px vertically)
           c.fillStyle = C_SKIN;
           c.beginPath();
-          c.ellipse(mx, my, hw + 2, 7, 0, 0, Math.PI * 2);
+          c.ellipse(mx, my, hw + 3, 10, 0, 0, Math.PI * 2);
           c.fill();
 
-          // Mouth interior
+          // 2. Dark mouth interior (open ellipse — bottom half)
           c.fillStyle = C_DARK;
           c.beginPath();
-          c.ellipse(mx, my + 2, hw - 3, open, 0, 0, Math.PI);
+          c.ellipse(mx, my + 1, hw - 2, open, 0, 0, Math.PI);
           c.fill();
 
-          // Lower lip
+          // 3. Lower lip
           c.fillStyle = C_LIP;
           c.beginPath();
-          c.ellipse(mx, my + open + 1, hw - 1, 3.5, 0, 0, Math.PI);
+          c.ellipse(mx, my + open, hw - 1, 2.5, 0, 0, Math.PI);
           c.fill();
 
-          // Upper lip
+          // 4. Upper lip line
           c.fillStyle = C_LIP;
           c.beginPath();
-          c.ellipse(mx, my - 1, hw - 1, 3, 0, Math.PI, 0);
+          c.ellipse(mx, my - 1, hw - 1, 2.5, 0, Math.PI, 0);
           c.fill();
         }
       } else {
