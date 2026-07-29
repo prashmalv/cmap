@@ -74,15 +74,6 @@ function greetingText(profile: UserProfile | null, careerTitle: string | null, l
 
 // ─── Photo Avatar with Canvas lip-sync ───────────────────────────────────────
 //
-// Mouth tuning — pixel-verified on cmapgl.jpeg (168×300, cover+top → 188px canvas)
-const MOUTH_CX  = 0.52;   // slight right — face is fractionally right of canvas center
-const MOUTH_CY  = 0.745;  // slightly lower than prev 0.725
-const MOUTH_HW  = 0.078;  // half-width ≈15px (natural smile width)
-const MOUTH_MAX = 0.026;  // max jaw open — subtle, not exaggerated
-// Colours pixel-sampled from rendered canvas:
-const C_SKIN = "#de9c7c";   // exact face skin at y=120 (above lips)
-const C_LIP  = "#b03030";   // lip colour
-const C_DARK = "#4a1010";   // dark mouth interior (no white blob)
 
 function CallAvatar({ state }: { state: CallState }) {
   const speaking = state === "ai_speaking";
@@ -129,38 +120,6 @@ function CallAvatar({ state }: { state: CallState }) {
         // Cover+top: scale by width, align to top, canvas clips the bottom
         const drawH = W * (imgRef.current.naturalHeight / imgRef.current.naturalWidth);
         c.drawImage(imgRef.current, 0, 0, W, drawH);
-
-        if (isSpeaking) {
-          phaseRef.current += 0.18;
-          const open = Math.abs(Math.sin(phaseRef.current)) * (H * MOUTH_MAX) + 2;
-          const mx = W * MOUTH_CX;
-          const my = H * MOUTH_CY;
-          const hw = W * MOUTH_HW;
-
-          // 1. Skin patch — covers full original smile (spans ±10px vertically)
-          c.fillStyle = C_SKIN;
-          c.beginPath();
-          c.ellipse(mx, my, hw + 3, 10, 0, 0, Math.PI * 2);
-          c.fill();
-
-          // 2. Dark mouth interior (open ellipse — bottom half)
-          c.fillStyle = C_DARK;
-          c.beginPath();
-          c.ellipse(mx, my + 1, hw - 2, open, 0, 0, Math.PI);
-          c.fill();
-
-          // 3. Lower lip
-          c.fillStyle = C_LIP;
-          c.beginPath();
-          c.ellipse(mx, my + open, hw - 1, 2.5, 0, 0, Math.PI);
-          c.fill();
-
-          // 4. Upper lip line
-          c.fillStyle = C_LIP;
-          c.beginPath();
-          c.ellipse(mx, my - 1, hw - 1, 2.5, 0, Math.PI, 0);
-          c.fill();
-        }
       } else {
         // Fallback gradient face when image not loaded
         const grad = c.createRadialGradient(W * 0.38, H * 0.32, 0, W / 2, H / 2, W / 2);
